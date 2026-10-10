@@ -33,6 +33,7 @@ xcodegen generate
 swift test
 xcodebuild -project FanLever.xcodeproj -scheme FanLever -configuration Release \
   -derivedDataPath build/DerivedData -destination 'platform=macOS,arch=arm64' build
+python3 scripts/check-app-intents.py 'build/DerivedData/Build/Products/Release/Fan Lever.app'
 ```
 
 Set the signing team, app group and XPC signing requirement together when building for another developer. Do not remove XPC peer validation. This local build is not an App Store submission or notarized public release.
@@ -52,7 +53,7 @@ The signed host also supports `--select 0` through `--select 5` for explicitly a
 Layout preview (actual SwiftUI content, fixture data, solid background; not a screenshot of the macOS glass host):
 
 ```sh
-swiftc -D WIDGET_RENDER Shared/Models.swift Shared/FanClient.swift Shared/LeverView.swift \
+swiftc -D WIDGET_RENDER Shared/Models.swift Shared/FanClient.swift Shared/LeverView.swift Shared/SetFanIntent.swift \
   Widget/FanWidget.swift scripts/render-widget.swift -o .build/render-widget
 .build/render-widget .build/previews
 ```

@@ -19,3 +19,7 @@ The 80-byte AppleSMC IOKit packet format and key names were checked against the 
 - https://developer.apple.com/documentation/widgetkit/optimizing-your-widget-for-accented-rendering-mode-and-liquid-glass
 
 Fan control uses an undocumented hardware interface. Compile success and successful sensor reads do not prove privileged writes or visible desktop-widget interaction; those acceptance gates are recorded separately in STATUS.md.
+
+## Widget action routing
+
+`Shared/SetFanIntent.swift` belongs to both the app and widget targets. macOS can route a widget click to the running windowless host, so both bundles must contain generated `SetFanIntent` metadata. `scripts/check-app-intents.py` verifies the built artifacts, including the notch parameter and background execution. Widget-only membership compiled successfully but caused clicks to fail with “There is no metadata for SetFanIntent” when routed to the host.
