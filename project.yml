@@ -1,0 +1,87 @@
+name: FanLever
+options:
+  deploymentTarget:
+    macOS: "26.0"
+  createIntermediateGroups: true
+settings:
+  base:
+    SWIFT_VERSION: "5.0"
+    DEVELOPMENT_TEAM: N6GPP46885
+    CODE_SIGN_STYLE: Manual
+    CODE_SIGN_IDENTITY: Apple Development
+    ENABLE_HARDENED_RUNTIME: YES
+    MARKETING_VERSION: 0.1.0
+    CURRENT_PROJECT_VERSION: 2
+    ARCHS: arm64
+packages:
+  DevFeedback:
+    path: Vendor/DevFeedback
+targets:
+  FanLever:
+    type: application
+    platform: macOS
+    sources: [App, Shared, SMC]
+    dependencies:
+      - target: FanLeverWidget
+      - target: FanLeverHelper
+        embed: false
+      - package: DevFeedback
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: space.monroe.FanLever
+        PRODUCT_NAME: Fan Lever
+        SWIFT_OBJC_BRIDGING_HEADER: SMC/FanSMC.h
+        CODE_SIGN_ENTITLEMENTS: Config/App.entitlements
+        INFOPLIST_KEY_LSApplicationCategoryType: public.app-category.utilities
+    info:
+      path: Config/App-Info.plist
+      properties:
+        CFBundleDisplayName: Fan Lever
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        CFBundleURLTypes:
+          - CFBundleURLName: space.monroe.FanLever
+            CFBundleURLSchemes: [fanlever]
+    postBuildScripts:
+      - name: Embed fan helper
+        script: |
+          set -eu
+          mkdir -p "$TARGET_BUILD_DIR/$CONTENTS_FOLDER_PATH/Library/LaunchServices" "$TARGET_BUILD_DIR/$CONTENTS_FOLDER_PATH/Library/LaunchDaemons"
+          cp "$BUILT_PRODUCTS_DIR/FanLeverHelper" "$TARGET_BUILD_DIR/$CONTENTS_FOLDER_PATH/Library/LaunchServices/FanLeverHelper"
+          cp "$SRCROOT/Config/space.monroe.FanLever.helper.plist" "$TARGET_BUILD_DIR/$CONTENTS_FOLDER_PATH/Library/LaunchDaemons/"
+        basedOnDependencyAnalysis: false
+  FanLeverWidget:
+    type: app-extension
+    platform: macOS
+    sources: [Widget, Shared]
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: space.monroe.FanLever.widget
+        CODE_SIGN_ENTITLEMENTS: Config/Widget.entitlements
+        SKIP_INSTALL: YES
+    info:
+      path: Config/Widget-Info.plist
+      properties:
+        CFBundleDisplayName: Fan Lever
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.widgetkit-extension
+  FanLeverHelper:
+    type: tool
+    platform: macOS
+    sources:
+      - Helper
+      - SMC
+      - Shared/Models.swift
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: space.monroe.FanLever.helper
+        SWIFT_OBJC_BRIDGING_HEADER: SMC/FanSMC.h
+        OTHER_CODE_SIGN_FLAGS: "--identifier space.monroe.FanLever.helper"
+        SKIP_INSTALL: YES
+schemes:
+  FanLever:
+    build:
+      targets:
+        FanLever: all
