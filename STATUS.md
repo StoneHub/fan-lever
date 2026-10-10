@@ -1,24 +1,30 @@
-# Fan Lever delivery status
+# Project status
 
-Goal: native desktop widget, system glass appearance, clickable lever notches, readable small-widget telemetry, no companion window, a proper app/gallery icon, and five-minute battery boosts.
+Fan Lever 0.1.0 build 5 has been built, signed, installed and exercised on an Apple Silicon MacBook Pro with an M5 Pro, running macOS 27.2. The deployment target is macOS 26. Other Mac models are unverified.
 
-Installed: /Applications/Fan Lever.app, version 0.1.0 build 5, signed by team N6GPP46885. Exact current-build product: /Users/monroe/Developer/GitRepos/fan-lever/build/DerivedData/Build/Products/Release/Fan Lever.app. Built/installed executable SHA-256: 90d5568a598239c0adeda7e24098fc2cdb6aa858ef02450a10dd9590fc6ce03c. Strict bundle signature passes. Both app and extension bundle the new AppIcon assets and declare their icon metadata. One installed widget registration remains; development products are unregistered.
+## Verified behavior
 
-Verified: 13 core tests pass, including battery expiry, unplug clamping, no deadline extension when replugged, per-fan limits, partial failures, thermal recovery, failed rollback retries and sensor-independent Auto recovery. Release and Debug builds succeed. Release has no companion UI or DevFeedback markers. The development-only preview remains available through --preview with the vendored DevFeedback revision.
+- Native small and medium desktop widgets with clickable fan notches.
+- A readable small layout with separate full RPM readings and an Auto button.
+- A windowless companion app; widget actions do not open a control window.
+- Signed-peer XPC access to a privileged SMAppService helper.
+- Fan-specific minimum/maximum target validation and read-back confirmation.
+- Five-minute manual leases on battery and 30-minute leases on AC power. Unplugging shortens an active deadline; reconnecting does not extend it.
+- A real five-minute battery lease returned both fans to automatic control at expiry.
+- A real widget Max click set both targets to the reported 7,826 RPM limit; both fans reached approximately that speed and were subsequently returned to Auto.
+- Release and Debug builds, 13 controller tests, and the built-artifact App Intent metadata check pass.
+- Release excludes the development feedback implementation and control-window UI.
 
-Runtime: the installed app is a windowless LSUIElement host. It listens for power-source changes to request widget refreshes, with no polling and no added login agent. The approved privileged helper enforces the deadline independently. At this checkpoint the host PID is 7712 and helper PID 73039; re-check ownership before stopping. Disable the helper with the installed executable's --disable-helper option, which confirms Auto before unregistering. Stop the host by sending SIGTERM only to its verified installed executable PID. These two processes intentionally remain available for desktop fan control.
+Widget RPM values are sampled and subject to macOS refresh budgets. The helper enforces deadlines independently of widget refreshes.
 
-Hardware acceptance: the earlier approved Max-to-Auto test reached 7,825/7,837 RPM against each fan's 7,826 RPM limit and restored mode 0. For build 3, unplugging shortened the active AC deadline from 02:48:46 UTC to 02:24:04 UTC (five minutes from the detected power change). For build 4, the user's latest notch 4 was restored after installation at 02:21:53 UTC with an exact 300-second battery lease. At 02:26:56 UTC both fans were mode 0 with system-selected targets, confirming real deadline recovery. Fans are now on Auto.
+## Known issue
 
-Visual acceptance: the user added the desktop widget and used its notch controls. After the approved Notification Center restart, direct native inspection showed the redesigned small widget with readable full RPM values, five manual notch buttons, separate Auto, and its countdown. Fixture renders of small/medium content are available via scripts/render-widget.swift; they use a solid background, not the macOS glass host.
+The widget gallery may retain a white placeholder app icon even when the installed app and extension contain the correct icon and macOS's normal icon lookup resolves it. Registration refreshes and widget-service restarts did not fix this on the tested system. A reboot has not been validated as a fix. Track further findings in [issue #1](https://github.com/StoneHub/fan-lever/issues/1).
 
-Gallery icon investigation: the user still saw the old white placeholder after build 4, extension icon metadata, bundle timestamp refresh and Notification Center restart. macOS's NSWorkspace icon lookup returns the correct teal artwork for both the installed app and extension. LaunchServices points to the correct files. Control Center and chronod were also restarted with explicit user approval; the user still reported the white placeholder. Monroe chose to defer further gallery investigation until a later Mac reboot. A reboot has not been tested and is not a confirmed fix. No cache databases or widget layouts were deleted. Tracked follow-up: https://github.com/StoneHub/fan-lever/issues/1. This is the only unresolved requested item. Next action: Monroe checks the gallery after his planned reboot; if it remains white, Codex resumes with the system-icon-versus-gallery discrepancy, without repeating the completed restart tests.
+## Widget action regression
 
-Test when using the widget: verify the teal gallery icon, full small-widget RPMs, six control states, no companion window on background click, and five-minute battery / 30-minute AC timeout. macOS budgets widget refreshes, so RPM readings remain sampled; hardware deadlines do not depend on the display refreshing.
+Build 4 defined `SetFanIntent` only in the widget extension. macOS routed clicks to the running companion app and rejected them because its action metadata was missing. Build 5 moves the intent into shared source compiled by both targets. `scripts/check-app-intents.py` fails on the affected artifact and passes only when both bundles contain the background action and notch parameter. A real desktop-widget click verified the repair.
 
+## Distribution
 
-## Build 5: repair inert widget clicks
-
-After the host became windowless and continuously running, the user reported that notch clicks did nothing. Unified logs showed macOS routing SetFanIntent to space.monroe.FanLever and rejecting it because the app had no action metadata. The intent was compiled only into the widget. Shared/SetFanIntent.swift now belongs to both targets. The new artifact check fails on build 4 and passes on both build 5 bundles, checking the action, notch parameter and background execution.
-
-Release and Debug builds pass; all 13 controller tests still pass. The signed installed executable matches the exact current Release product. The helper executable is byte-for-byte unchanged and was not restarted. At 22:35 EDT the user clicked MAX and confirmed the widget worked. A helper read observed both targets at 7,826 RPM, actual speeds 7,834/7,846 RPM and selected Max. Codex returned both fans to mode 0/Auto and verified the response. The five-minute battery policy remains unchanged; this click was on AC power. The gallery icon issue remains separately deferred in issue #1.
+The repository is MIT-licensed source. The tested app uses local Apple Development signing. No notarized public binary release has been published.
