@@ -70,22 +70,31 @@ struct FanWidgetView: View {
                         .accessibilityHint(snapshot.onBattery ? "Steps between 5 and 1 minute" : "Steps down through 30, 15, 10, 5 and 1 minute, then wraps")
                 } else { countdown }
             } else {
-                HStack(spacing: 3) { Text("Read"); Text(snapshot.date, style: .relative) }.widgetChromeFootnote()
+                // When the speeds above were sampled. A clock time keeps its width; relative ages grow and truncate.
+                HStack(spacing: 3) { Text("Updated"); Text(snapshot.date, style: .time) }.widgetChromeFootnote()
             }
         }
     }
     // Sampled speeds stay secondary to the lever: one compact line under it.
+    // A narrow widget drops the fan labels, then scales down, rather than truncate a speed.
     private var readings: some View {
+        ViewThatFits(in: .horizontal) {
+            speedLine(labeled: true)
+            speedLine(labeled: false)
+            speedLine(labeled: false).minimumScaleFactor(0.7)
+        }.accessibilityLabel("Sampled fan speeds")
+    }
+    private func speedLine(labeled: Bool) -> some View {
         HStack(alignment: .firstTextBaseline, spacing: small ? 8 : 16) {
             ForEach(snapshot.fans.prefix(2)) { fan in
                 HStack(alignment: .firstTextBaseline, spacing: 3) {
-                    Text("F\(fan.id + 1)").font(.system(size: 9, weight: .medium)).foregroundStyle(.secondary)
+                    if labeled { Text("F\(fan.id + 1)").font(.system(size: 9, weight: .medium)).foregroundStyle(.secondary) }
                     Text(Int(fan.actual).formatted(.number.grouping(.never)))
                         .font(.system(size: 12, weight: .semibold, design: .rounded)).monospacedDigit()
                 }
             }
             Text(snapshot.fans.isEmpty ? "— RPM" : "RPM").font(.system(size: 9, weight: .medium)).foregroundStyle(.secondary)
-        }.lineLimit(1).accessibilityLabel("Sampled fan speeds")
+        }.lineLimit(1)
     }
 }
 
