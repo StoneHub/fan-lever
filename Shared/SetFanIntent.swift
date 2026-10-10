@@ -18,3 +18,15 @@ struct SetFanIntent: AppIntent {
     }
 }
 
+struct CycleFanTimerIntent: AppIntent {
+    static var title: LocalizedStringResource = "Change Auto timer"
+    static var description = IntentDescription("Shorten the time before Fan Lever returns to Auto: 30, 15, 10, 5, then 1 minute, then back to 30. On battery, 5 and 1.")
+    func perform() async throws -> some IntentResult {
+        let snapshot = await FanClient.cycleAutoTimer()
+        SnapshotStore.save(snapshot)
+        WidgetCenter.shared.reloadTimelines(ofKind: FanConstants.widgetKind)
+        if let message = snapshot.message { throw FanError.message(message) }
+        return .result()
+    }
+}
+

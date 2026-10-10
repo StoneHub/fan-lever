@@ -130,4 +130,48 @@ final class FanControllerTests: XCTestCase {
         hw.fans[0] = FanReading(id: 0, actual: 3000, minimum: 2300, maximum: 7800, target: 7000, mode: 1)
         XCTAssertNil(controller.status().selected)
     }
+    func testTimerStepsDownThenWrapsOnPower() {
+        let controller = FanController(hardware: FakeHardware())
+        let start = Date(timeIntervalSince1970: 100)
+        _ = controller.select(4, now: start)
+        let minutes = (0..<6).map { _ in controller.cycleAutoTimer(now: start).expires!.timeIntervalSince(start) / 60 }
+        XCTAssertEqual(minutes, [15, 10, 5, 1, 30, 15])
+    }
+    func testTimerStepsBelowTheTimeLeft() {
+        let controller = FanController(hardware: FakeHardware())
+        let start = Date(timeIntervalSince1970: 100)
+        _ = controller.select(4, now: start)
+        let later = start.addingTimeInterval(26 * 60) // 4 minutes left
+        XCTAssertEqual(controller.cycleAutoTimer(now: later).expires, later.addingTimeInterval(60))
+    }
+    func testTimerOnBatteryStaysWithinFiveMinutes() {
+        let controller = FanController(hardware: FakeHardware(), onBattery: { true })
+        let start = Date(timeIntervalSince1970: 100)
+        _ = controller.select(4, now: start)
+        let minutes = (0..<3).map { _ in controller.cycleAutoTimer(now: start).expires!.timeIntervalSince(start) / 60 }
+        XCTAssertEqual(minutes, [1, 5, 1])
+    }
+    func testTimerDoesNothingWithoutABoost() {
+        let hw = FakeHardware(); let controller = FanController(hardware: hw)
+        XCTAssertNil(controller.cycleAutoTimer().expires)
+        _ = controller.select(0)
+        XCTAssertNil(controller.cycleAutoTimer().expires)
+        XCTAssertTrue(hw.fans.allSatisfy(\.isAutomatic))
+        XCTAssertFalse(controller.ownsFans)
+    }
+    func testShortenedTimerStillReturnsAuto() {
+        let hw = FakeHardware(); let controller = FanController(hardware: hw)
+        let start = Date(timeIntervalSince1970: 100)
+        _ = controller.select(5, now: start)
+        for _ in 0..<4 { _ = controller.cycleAutoTimer(now: start) } // 1 minute
+        controller.tick(now: start.addingTimeInterval(59))
+        XCTAssertTrue(controller.ownsFans)
+        controller.tick(now: start.addingTimeInterval(60))
+        XCTAssertTrue(hw.fans.allSatisfy(\.isAutomatic))
+    }
+    func testOlderHelperSnapshotHidesTimerControl() throws {
+        XCTAssertEqual(FanController(hardware: FakeHardware()).status().canCycleTimer, true)
+        let old = #"{"date":0,"fans":[],"selected":5,"expires":60,"connected":true,"onBattery":false}"#
+        XCTAssertNil(try JSONDecoder().decode(FanSnapshot.self, from: Data(old.utf8)).canCycleTimer)
+    }
 }

@@ -33,6 +33,8 @@ struct FanSnapshot: Codable {
     var message: String? = nil
     var connected = false
     var onBattery = false
+    // Optional so snapshots from a helper that predates the timer still decode; nil hides the control.
+    var canCycleTimer: Bool? = nil
     static let unavailable = FanSnapshot(message: "Click to enable fan control.")
     static let preview = FanSnapshot(fans: [
         .init(id: 0, actual: 4300, minimum: 2300, maximum: 7800, target: 4300, mode: 0),
@@ -56,10 +58,14 @@ enum FanConstants {
     static let group = "N6GPP46885.group.space.monroe.FanLever"
     static let lease: TimeInterval = 30 * 60
     static let batteryLease: TimeInterval = 5 * 60
+    /// Steps for the Auto timer, longest first. Each click moves to the next step below the time left.
+    static let timerSteps: [TimeInterval] = [30, 15, 10, 5, 1].map { $0 * 60 }
     static let signedTeam = "anchor apple generic and certificate leaf[subject.OU] = \"N6GPP46885\""
 }
 
 @objc protocol FanServiceProtocol {
     func snapshot(reply: @escaping (Data) -> Void)
     func select(_ setting: Int, reply: @escaping (Data) -> Void)
+    /// Takes no value: the helper picks the next timer step itself.
+    func cycleAutoTimer(reply: @escaping (Data) -> Void)
 }

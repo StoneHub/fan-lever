@@ -43,7 +43,7 @@ struct FanWidgetView: View {
             .widgetURL(URL(string: "fanlever://open"))
     }
     var content: some View {
-        VStack(alignment: .leading, spacing: small ? 6 : 8) {
+        VStack(alignment: .leading, spacing: 6) {
             WidgetChromeHeader(symbol: "fanblades.fill", title: small ? "Fans" : "Fan Lever") {
                 if small {
                     Button(intent: SetFanIntent(.auto)) {
@@ -52,37 +52,40 @@ struct FanWidgetView: View {
                         .accessibilityAddTraits(selection == .auto ? .isSelected : [])
                 }
             }
-            if small { readings }
             LeverView(selected: selection, settings: small ? Array(FanSetting.allCases.dropFirst()) : FanSetting.allCases, compact: small) { notch($0) }
-            if !small { readings }
+            readings
             if let message = snapshot.message {
                 Link(destination: URL(string: "fanlever://setup")!) {
                     Text(message).font(.system(size: 10)).lineLimit(2)
                 }
-            } else {
-                HStack(spacing: 3) {
-                    if let expires = snapshot.expires, expires > Date() {
-                        Text("Auto in")
-                        Text(timerInterval: snapshot.date...max(snapshot.date, expires), countsDown: true).monospacedDigit()
-                    } else {
-                        Text("Read"); Text(snapshot.date, style: .relative)
-                    }
+            } else if let expires = snapshot.expires, expires > Date() {
+                let countdown = HStack(spacing: 3) {
+                    if snapshot.canCycleTimer == true { Image(systemName: "timer") }
+                    Text("Auto in")
+                    Text(timerInterval: snapshot.date...max(snapshot.date, expires), countsDown: true).monospacedDigit()
                 }.widgetChromeFootnote()
+                // A helper older than the timer step call reports nil; leave the countdown as plain text then.
+                if snapshot.canCycleTimer == true {
+                    Button(intent: CycleFanTimerIntent()) { countdown }.buttonStyle(.plain)
+                        .accessibilityHint(snapshot.onBattery ? "Steps between 5 and 1 minute" : "Steps down through 30, 15, 10, 5 and 1 minute, then wraps")
+                } else { countdown }
+            } else {
+                HStack(spacing: 3) { Text("Read"); Text(snapshot.date, style: .relative) }.widgetChromeFootnote()
             }
         }
     }
+    // Sampled speeds stay secondary to the lever: one compact line under it.
     private var readings: some View {
-        HStack(alignment: .firstTextBaseline, spacing: small ? 8 : 20) {
+        HStack(alignment: .firstTextBaseline, spacing: small ? 8 : 16) {
             ForEach(snapshot.fans.prefix(2)) { fan in
-                VStack(alignment: .leading, spacing: 1) {
-                    Text("F\(fan.id + 1) · RPM").font(.system(size: 9, weight: .medium)).foregroundStyle(.secondary)
+                HStack(alignment: .firstTextBaseline, spacing: 3) {
+                    Text("F\(fan.id + 1)").font(.system(size: 9, weight: .medium)).foregroundStyle(.secondary)
                     Text(Int(fan.actual).formatted(.number.grouping(.never)))
-                        .font(.system(size: small ? 19 : 18, weight: .semibold, design: .rounded)).monospacedDigit()
-                        .fixedSize(horizontal: true, vertical: false)
-                }.frame(maxWidth: .infinity, alignment: .leading)
+                        .font(.system(size: 12, weight: .semibold, design: .rounded)).monospacedDigit()
+                }
             }
-            if snapshot.fans.isEmpty { Text("— RPM").font(.system(size: 19)).foregroundStyle(.secondary) }
-        }.accessibilityLabel("Sampled fan speeds")
+            Text(snapshot.fans.isEmpty ? "— RPM" : "RPM").font(.system(size: 9, weight: .medium)).foregroundStyle(.secondary)
+        }.lineLimit(1).accessibilityLabel("Sampled fan speeds")
     }
 }
 
@@ -91,7 +94,7 @@ struct FanWidgetView: View {
     var body: some WidgetConfiguration {
         StaticConfiguration(kind: FanConstants.widgetKind, provider: FanProvider()) { FanWidgetView(entry: $0) }
             .configurationDisplayName("Fan Lever")
-            .description("A glass fan lever. Click a notch for a boost: 5 minutes on battery, 30 on power, or choose Auto.")
+            .description("A glass fan lever. Click a notch for a boost: 5 minutes on battery, 30 on power, or choose Auto. Click the countdown to shorten it.")
             .supportedFamilies([.systemSmall, .systemMedium])
     }
 }
