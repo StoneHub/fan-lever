@@ -2,81 +2,42 @@
 
 <img src="App/Assets.xcassets/AppIcon.appiconset/icon_128x128@2x.png" width="80" alt="Fan Lever icon">
 
-A native macOS desktop widget with a glass lever and six clickable fan settings. Apple Silicon, macOS 26 or newer. [MIT licensed](LICENSE).
+**A little more breeze. One click from your desktop.**
 
-Tested on an M5 Pro MacBook Pro. Other hardware is unverified; some models may reject fan control.
+A native Mac widget with a glass lever, six fan settings, and an automatic return to macOS cooling. No Dock icon. No control window. Just the lever.
 
-| Notch | Action |
-| --- | --- |
-| Auto | Return both fans to macOS control |
-| 1 | 40% of each fan's reported maximum |
-| 2 | 55% |
-| 3 | 70% |
-| 4 | 85% |
-| Max | 100% |
+[**Download for Mac →**](https://github.com/StoneHub/fan-lever/releases/tag/v0.1.0-preview.1) · [Monroe’s website](https://monroes.space) · [MIT](LICENSE)
 
-Manual targets are clamped to each fan's reported minimum/maximum. Every manual selection lasts five minutes on battery or 30 minutes on AC power, then returns to Auto. Click the **Auto in** countdown to shorten it: each click moves to the next step below the time left (30, 15, 10, 5, then 1 minute) and then wraps back to 30. On battery the steps are 5 and 1. Unplugging clamps an active deadline to at most five minutes remaining; reconnecting does not extend it. The helper also attempts Auto recovery after partial failure, serious/critical thermal pressure, orderly termination and crash relaunch. It does not write SMC diagnostic unlock keys. Other Mac models are unverified and may reject control.
+**Apple Silicon · macOS 26+ · Tested on an M5 Pro MacBook Pro.** Other Macs are unverified and may reject fan control. The current download is a development-signed, unnotarized preview; [first-open instructions](docs/INSTALL.md#first-open).
 
-## Use
+<img src="docs/images/desktop-widget.png" width="360" alt="Fan Lever running on the macOS desktop with Max selected, measured fan RPM, and an automatic-return countdown">
 
-1. Build the app using the instructions below, copy it to Applications, and open **Fan Lever** once. It runs without a window.
-2. Control-click the desktop → **Edit Widgets** → **Fan Lever**, then add small or medium.
-3. Click the widget’s setup message (or open `fanlever://setup`) and approve the helper in macOS **Login Items & Extensions**. This is required for privileged hardware writes.
-4. Click a notch. The lever reflects confirmed controller mode/target; the RPM line under it reports measured speed, which takes time to settle. Widget telemetry is sampled and may be several minutes old. Outside a boost, the line under the speeds shows when they were sampled ("Updated 9:52 AM").
+*Actual desktop widget. Glass, tint, and accent follow your macOS settings.*
 
-The widget takes its appearance from System Settings: the system glass platter, Light or Dark mode, the glass tint, the Clear and Tinted widget styles, and your accent color, which fills the lever track up to the handle. The handle is a translucent glass gradient. `Shared/WidgetChrome.swift` holds the header, pill, surface and accent conventions; [TailOps](https://github.com/StoneHub/tailops-monitor) keeps a matching copy so the two widgets look alike side by side. Notches are App Intent buttons, not a draggable slider. The small widget has a separate Auto button and five manual notches. Both sizes show the two RPM readings on one compact line under the lever. Clicking the widget background refreshes its data without opening a window. The installed app has no companion window or Dock item.
+## Install
 
-To remove the service, run `'/Applications/Fan Lever.app/Contents/MacOS/Fan Lever' --disable-helper`. It confirms Auto before unregistering. Removing the app without disabling the helper first is not the supported uninstall path.
+1. [Download the DMG](https://github.com/StoneHub/fan-lever/releases/download/v0.1.0-preview.1/Fan-Lever-0.1.0-preview.1-macOS-arm64.dmg), open it, and drag **Fan Lever** into **Applications**.
+2. Open **Fan Lever** once. It runs without a window. If macOS blocks this preview, follow [First open](docs/INSTALL.md#first-open).
+3. Control-click the desktop → **Edit Widgets** → **Fan Lever**. Add small or medium.
+4. Click the widget’s setup message and approve the Fan Lever helper in **System Settings → General → Login Items & Extensions**.
 
-## Build
+<img src="docs/images/install.png" width="550" alt="The download includes Fan Lever.app, an Applications shortcut, setup help, and license notices">
 
-Requires Xcode 27, XcodeGen and an Apple Development signing identity for the configured team.
+## Click. Cool. Return to Auto.
 
-```sh
-xcodegen generate
-swift test
-xcodebuild -project FanLever.xcodeproj -scheme FanLever -configuration Release \
-  -derivedDataPath build/DerivedData -destination 'platform=macOS,arch=arm64' build
-python3 scripts/check-app-intents.py 'build/DerivedData/Build/Products/Release/Fan Lever.app'
-```
+| Auto | 1 | 2 | 3 | 4 | Max |
+| --- | --- | --- | --- | --- | --- |
+| macOS control | 40% | 55% | 70% | 85% | 100% |
 
-Before building with your own signing identity, update these together:
+Manual targets stay within each fan’s reported limits. A boost lasts **5 minutes on battery** or **30 minutes plugged in**, then returns to Auto. Click the **Auto in** countdown to cycle its duration, or click **Auto** to hand control back immediately.
 
-- `DEVELOPMENT_TEAM` in `project.yml`.
-- The team-prefixed app group in both `Config/*.entitlements` files and `FanConstants.group` in `Shared/Models.swift`.
-- The team value in `FanConstants.signedTeam` in `Shared/Models.swift`.
+RPM readings are sampled, so they can lag behind a click. The helper enforces the timer independently of widget refreshes and attempts Auto recovery after failures or serious thermal pressure. [How it works](ARCHITECTURE.md).
 
-Keep the app, widget and helper signed by the same team and preserve XPC peer validation. The checked-in values describe the development setup; signing keys and certificates are not included. Build products appear under `build/DerivedData/Build/Products/Release/`. This repository currently publishes source; a notarized binary release is not available.
+## More
 
-Development builds integrate DevFeedback at the revision recorded in `Vendor/DevFeedback/PROVENANCE.md`. Release omits its UI and implementation. Run a Debug build with `--preview` to open the development-only companion preview. Feedback covers that preview; widget layouts must be checked in the actual widget host. The release contains no companion UI.
+- [Setup, updates & uninstall](docs/INSTALL.md)
+- [Build from source](docs/BUILD.md)
+- [Verification & known issues](STATUS.md) — the widget gallery may show a placeholder icon.
+- [Dependency notices & artwork provenance](THIRD_PARTY_NOTICES.md)
 
-Read-only diagnostics:
-
-```sh
-'/Applications/Fan Lever.app/Contents/MacOS/Fan Lever' --probe
-'/Applications/Fan Lever.app/Contents/MacOS/Fan Lever' --status
-```
-
-The signed host also supports `--select 0` through `--select 5` for explicitly authorized hardware acceptance testing. This changes real fan settings and requires the approved helper.
-
-
-Layout preview (actual SwiftUI content, fixture data, solid Light and Dark backgrounds; not a screenshot of the macOS glass host):
-
-```sh
-swiftc -D WIDGET_RENDER Shared/Models.swift Shared/FanClient.swift Shared/LeverView.swift Shared/SetFanIntent.swift \
-  Shared/WidgetChrome.swift Widget/FanWidget.swift scripts/render-widget.swift -o .build/render-widget
-.build/render-widget .build/previews
-```
-
-Add `-AppleAccentColor 5` (purple) or another accent index after the directory to preview a different accent without changing System Settings.
-
-When updating an installed bundle with `ditto`, touch the app and widget bundle directories before forcing LaunchServices registration; copying into an existing directory can preserve its original modification date. Check the visible gallery icon separately from icon files in the signed bundle.
-
-
-## License
-
-[MIT](LICENSE), copyright © 2026 Monroe Stone. Dependency notices and icon provenance are listed in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
-
-## Known issues
-
-The widget gallery can retain a placeholder app icon. See [project status](STATUS.md) and [issue #1](https://github.com/StoneHub/fan-lever/issues/1).
+Made by [Monroe Stone](https://monroes.space). [More projects on GitHub](https://github.com/StoneHub).
