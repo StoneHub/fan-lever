@@ -29,6 +29,9 @@ final class Service: NSObject, FanServiceProtocol, NSXPCListenerDelegate {
     func select(_ setting: Int, reply: @escaping (Data) -> Void) {
         queue.async { reply(self.encode(self.controller.select(setting))) }
     }
+    func cycleAutoTimer(reply: @escaping (Data) -> Void) {
+        queue.async { reply(self.encode(self.controller.cycleAutoTimer())) }
+    }
     private func encode(_ snapshot: FanSnapshot) -> Data { (try? JSONEncoder().encode(snapshot)) ?? Data() }
 }
 

@@ -27,6 +27,14 @@ private final class ReplyGate: @unchecked Sendable {
 
 enum FanClient {
     static func request(_ setting: FanSetting? = nil) async -> FanSnapshot {
+        await call { proxy, reply in
+            if let setting { proxy.select(setting.rawValue, reply: reply) } else { proxy.snapshot(reply: reply) }
+        }
+    }
+    static func cycleAutoTimer() async -> FanSnapshot {
+        await call { proxy, reply in proxy.cycleAutoTimer(reply: reply) }
+    }
+    private static func call(_ send: (FanServiceProtocol, @escaping (Data) -> Void) -> Void) async -> FanSnapshot {
         await withCheckedContinuation { continuation in
             let connection = NSXPCConnection(machServiceName: FanConstants.service, options: .privileged)
             connection.remoteObjectInterface = NSXPCInterface(with: FanServiceProtocol.self)
@@ -44,7 +52,7 @@ enum FanClient {
                 guard let snapshot = try? JSONDecoder().decode(FanSnapshot.self, from: data) else { failed(); return }
                 gate.finish(snapshot)
             }
-            if let setting { proxy.select(setting.rawValue, reply: reply) } else { proxy.snapshot(reply: reply) }
+            send(proxy, reply)
             DispatchQueue.global().asyncAfter(deadline: .now() + 5) {
                 gate.finish(FanSnapshot(message: "Fan controller timed out. Click to check setup."))
             }

@@ -47,6 +47,16 @@ final class FanController {
         }
         return status()
     }
+    /// Shortens the active boost to the next timer step below the time left, wrapping from the
+    /// shortest back to the longest. Steps never exceed the current power source's lease.
+    func cycleAutoTimer(now: Date = Date()) -> FanSnapshot {
+        guard ownsFans, let setting = selected, setting != .auto, let deadline = expires, deadline > now else { return status() }
+        let lease = onBattery() ? FanConstants.batteryLease : FanConstants.lease
+        let steps = FanConstants.timerSteps.filter { $0 <= lease }
+        let remaining = deadline.timeIntervalSince(now)
+        expires = now.addingTimeInterval(steps.first { $0 < remaining } ?? lease)
+        return status()
+    }
     func tick(now: Date = Date(), thermalEmergency: Bool = false) {
         guard ownsFans else { return }
         if onBattery(), let deadline = expires {
@@ -69,7 +79,7 @@ final class FanController {
                 actualSelection = selected
             }
             return FanSnapshot(fans: fans, selected: actualSelection, expires: actualSelection == .auto ? nil : expires,
-                               message: lastError, connected: true, onBattery: onBattery())
+                               message: lastError, connected: true, onBattery: onBattery(), canCycleTimer: true)
         } catch { return FanSnapshot(message: error.localizedDescription, connected: true) }
     }
 }
