@@ -2,7 +2,7 @@
 
 <img src="App/Assets.xcassets/AppIcon.appiconset/icon_128x128@2x.png" width="80" alt="Fan Lever icon">
 
-**A little more breeze. One click from your desktop.**
+**Control your Mac’s fans from your desktop.**
 
 A native Mac widget with a glass lever, six fan settings, and an automatic return to macOS cooling. No Dock icon. No control window. Just the lever.
 
