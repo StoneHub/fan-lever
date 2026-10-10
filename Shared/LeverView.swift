@@ -25,22 +25,33 @@ struct LeverView<Notch: View>: View {
     var body: some View {
         GeometryReader { geometry in
             let cell = geometry.size.width / CGFloat(settings.count)
+            let handleWidth = min(cell - 3, 29)
             ZStack(alignment: .topLeading) {
-                Capsule().fill(.primary.opacity(0.13))
-                    .overlay(Capsule().strokeBorder(.primary.opacity(0.12), lineWidth: 0.5))
+                Capsule().fill(.fill)
+                    .overlay(Capsule().strokeBorder(.separator, lineWidth: 0.5))
                     .frame(width: geometry.size.width - cell, height: 7)
                     .offset(x: cell / 2, y: compact ? 32 : 44)
                     .accessibilityHidden(true).allowsHitTesting(false)
                 if let selected, let index = settings.firstIndex(of: selected) {
+                    // Like a system slider, the track fills with the accent up to the handle, ending just
+                    // under its edge so the fill's rounded end doesn't show through the glass.
+                    if index > 0 {
+                        Capsule().fill(.tint)
+                            .frame(width: cell * CGFloat(index) - handleWidth / 2 + 4, height: 7)
+                            .offset(x: cell / 2, y: compact ? 32 : 44)
+                            .widgetAccentable()
+                            .accessibilityHidden(true).allowsHitTesting(false)
+                    }
                     RoundedRectangle(cornerRadius: 5)
                         .fill(.linearGradient(colors: [.white.opacity(0.85), .white.opacity(0.30), .gray.opacity(0.3)], startPoint: .topLeading, endPoint: .bottomTrailing))
                         .overlay(RoundedRectangle(cornerRadius: 5).strokeBorder(.white.opacity(0.8), lineWidth: 0.8))
+                        .overlay(RoundedRectangle(cornerRadius: 5).stroke(.separator, lineWidth: 0.5))
                         .overlay(HStack(spacing: 3) {
                             ForEach(0..<3) { _ in Capsule().fill(.black.opacity(0.26)).frame(width: 1, height: 9) }
                         })
                         .shadow(color: .black.opacity(0.20), radius: 3, y: 2)
-                        .frame(width: min(cell - 3, 29), height: 25)
-                        .offset(x: cell * (CGFloat(index) + 0.5) - min(cell - 3, 29) / 2, y: compact ? 23 : 35)
+                        .frame(width: handleWidth, height: 25)
+                        .offset(x: cell * (CGFloat(index) + 0.5) - handleWidth / 2, y: compact ? 23 : 35)
                         .accessibilityHidden(true).allowsHitTesting(false)
                 }
                 HStack(spacing: 0) { ForEach(settings) { setting in notch(setting).frame(width: cell) } }

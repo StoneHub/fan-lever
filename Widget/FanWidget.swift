@@ -39,21 +39,15 @@ struct FanWidgetView: View {
     }
     var body: some View {
         content
-            .containerBackground(.fill.tertiary, for: .widget)
+            .widgetChromeSurface()
             .widgetURL(URL(string: "fanlever://open"))
     }
     var content: some View {
         VStack(alignment: .leading, spacing: small ? 6 : 8) {
-            HStack(spacing: 5) {
-                Image(systemName: "fanblades.fill").font(.system(size: 14)).widgetAccentable()
-                Text(small ? "Fans" : "Fan Lever").font(.system(size: 12, weight: .semibold))
-                Spacer(minLength: 2)
+            WidgetChromeHeader(symbol: "fanblades.fill", title: small ? "Fans" : "Fan Lever") {
                 if small {
                     Button(intent: SetFanIntent(.auto)) {
-                        Text("AUTO").font(.system(size: 10, weight: .bold, design: .rounded))
-                            .padding(.horizontal, 7).padding(.vertical, 4)
-                            .background(.primary.opacity(selection == .auto ? 0.20 : 0.06), in: Capsule())
-                            .overlay(Capsule().strokeBorder(.primary.opacity(selection == .auto ? 0.5 : 0.15), lineWidth: 0.7))
+                        WidgetChromePill(prominence: selection == .auto ? .selected : .standard) { Text("AUTO") }
                     }.buttonStyle(.plain).accessibilityLabel("Automatic fan control")
                         .accessibilityAddTraits(selection == .auto ? .isSelected : [])
                 }
@@ -73,8 +67,7 @@ struct FanWidgetView: View {
                     } else {
                         Text("Read"); Text(snapshot.date, style: .relative)
                     }
-                }.font(.system(size: 11, weight: .medium)).foregroundStyle(.secondary)
-                    .lineLimit(1)
+                }.widgetChromeFootnote()
             }
         }
     }

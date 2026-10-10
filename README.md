@@ -24,7 +24,7 @@ Manual targets are clamped to each fan's reported minimum/maximum. Every manual 
 3. Click the widget’s setup message (or open `fanlever://setup`) and approve the helper in macOS **Login Items & Extensions**. This is required for privileged hardware writes.
 4. Click a notch. The lever reflects confirmed controller mode/target; RPM reports measured speed, which takes time to settle. Widget telemetry is sampled and may be several minutes old; the widget labels its sample age.
 
-The widget background adopts macOS’s system-controlled glass/tinted appearance. The lever handle uses a custom translucent gradient. Notches are App Intent buttons, not a draggable slider. The small widget has a separate Auto button and five manual notches, with two large RPM readings. Clicking the widget background refreshes its data without opening a window. The installed app has no companion window or Dock item.
+The widget takes its appearance from System Settings: the system glass platter, Light or Dark mode, the glass tint, the Clear and Tinted widget styles, and your accent color, which fills the lever track up to the handle. The handle is a translucent glass gradient. `Shared/WidgetChrome.swift` holds the header, pill, surface and accent conventions; [TailOps](https://github.com/StoneHub/tailops-monitor) keeps a matching copy so the two widgets look alike side by side. Notches are App Intent buttons, not a draggable slider. The small widget has a separate Auto button and five manual notches, with two large RPM readings. Clicking the widget background refreshes its data without opening a window. The installed app has no companion window or Dock item.
 
 To remove the service, run `'/Applications/Fan Lever.app/Contents/MacOS/Fan Lever' --disable-helper`. It confirms Auto before unregistering. Removing the app without disabling the helper first is not the supported uninstall path.
 
@@ -60,13 +60,15 @@ Read-only diagnostics:
 The signed host also supports `--select 0` through `--select 5` for explicitly authorized hardware acceptance testing. This changes real fan settings and requires the approved helper.
 
 
-Layout preview (actual SwiftUI content, fixture data, solid background; not a screenshot of the macOS glass host):
+Layout preview (actual SwiftUI content, fixture data, solid Light and Dark backgrounds; not a screenshot of the macOS glass host):
 
 ```sh
 swiftc -D WIDGET_RENDER Shared/Models.swift Shared/FanClient.swift Shared/LeverView.swift Shared/SetFanIntent.swift \
-  Widget/FanWidget.swift scripts/render-widget.swift -o .build/render-widget
+  Shared/WidgetChrome.swift Widget/FanWidget.swift scripts/render-widget.swift -o .build/render-widget
 .build/render-widget .build/previews
 ```
+
+Add `-AppleAccentColor 5` (purple) or another accent index after the directory to preview a different accent without changing System Settings.
 
 When updating an installed bundle with `ditto`, touch the app and widget bundle directories before forcing LaunchServices registration; copying into an existing directory can preserve its original modification date. Check the visible gallery icon separately from icon files in the signed bundle.
 
