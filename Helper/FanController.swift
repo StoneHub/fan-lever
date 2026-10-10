@@ -5,12 +5,14 @@ final class FanController {
     let hardware: FanHardware
     let markOwnership: () throws -> Void
     let clearOwnership: () -> Void
+    let onBattery: () -> Bool
     var selected: FanSetting?
     var expires: Date?
     var lastError: String?
     var ownsFans = false
-    init(hardware: FanHardware, markOwnership: @escaping () throws -> Void = {}, clearOwnership: @escaping () -> Void = {}) {
+    init(hardware: FanHardware, markOwnership: @escaping () throws -> Void = {}, clearOwnership: @escaping () -> Void = {}, onBattery: @escaping () -> Bool = { false }) {
         self.hardware = hardware; self.markOwnership = markOwnership; self.clearOwnership = clearOwnership
+        self.onBattery = onBattery
     }
     func restoreAutomatic() throws {
         let ids = try hardware.fanIDs()
@@ -32,7 +34,8 @@ final class FanController {
                 // Record ownership before the first write, including partial failures.
                 try markOwnership(); ownsFans = true
                 for (fan, target) in zip(fans, targets) { try hardware.manual(fan, target: target) }
-                selected = setting; expires = now.addingTimeInterval(FanConstants.lease)
+                selected = setting
+                expires = now.addingTimeInterval(onBattery() ? FanConstants.batteryLease : FanConstants.lease)
             }
             lastError = nil
         } catch {
@@ -46,6 +49,9 @@ final class FanController {
     }
     func tick(now: Date = Date(), thermalEmergency: Bool = false) {
         guard ownsFans else { return }
+        if onBattery(), let deadline = expires {
+            expires = min(deadline, now.addingTimeInterval(FanConstants.batteryLease))
+        }
         if expires == nil || now >= expires! || thermalEmergency {
             do {
                 try restoreAutomatic()
@@ -63,7 +69,7 @@ final class FanController {
                 actualSelection = selected
             }
             return FanSnapshot(fans: fans, selected: actualSelection, expires: actualSelection == .auto ? nil : expires,
-                               message: lastError, connected: true)
+                               message: lastError, connected: true, onBattery: onBattery())
         } catch { return FanSnapshot(message: error.localizedDescription, connected: true) }
     }
 }

@@ -3,32 +3,35 @@ import SwiftUI
 struct LeverNotch: View {
     let setting: FanSetting
     let selected: Bool
+    var compact = false
     var body: some View {
-        VStack(spacing: 12) {
-            Text(setting.label).font(.system(size: 10, weight: selected ? .bold : .medium, design: .rounded))
+        VStack(spacing: compact ? 5 : 12) {
+            Text(setting.label).font(.system(size: 11, weight: selected ? .bold : .medium, design: .rounded))
                 .foregroundStyle(selected ? .primary : .secondary)
                 .lineLimit(1).minimumScaleFactor(0.8)
             RoundedRectangle(cornerRadius: 1).fill(.primary.opacity(selected ? 0.9 : 0.28)).frame(width: 2, height: 8)
             Spacer(minLength: 0)
         }
-        .frame(maxWidth: .infinity).frame(height: 63)
+        .frame(maxWidth: .infinity).frame(height: compact ? 48 : 63)
         .contentShape(Rectangle())
     }
 }
 
 struct LeverView<Notch: View>: View {
     let selected: FanSetting?
+    var settings: [FanSetting] = FanSetting.allCases
+    var compact = false
     @ViewBuilder var notch: (FanSetting) -> Notch
     var body: some View {
         GeometryReader { geometry in
-            let cell = geometry.size.width / 6
+            let cell = geometry.size.width / CGFloat(settings.count)
             ZStack(alignment: .topLeading) {
                 Capsule().fill(.primary.opacity(0.13))
                     .overlay(Capsule().strokeBorder(.primary.opacity(0.12), lineWidth: 0.5))
                     .frame(width: geometry.size.width - cell, height: 7)
-                    .offset(x: cell / 2, y: 44)
+                    .offset(x: cell / 2, y: compact ? 32 : 44)
                     .accessibilityHidden(true).allowsHitTesting(false)
-                if let selected {
+                if let selected, let index = settings.firstIndex(of: selected) {
                     RoundedRectangle(cornerRadius: 5)
                         .fill(.linearGradient(colors: [.white.opacity(0.85), .white.opacity(0.30), .gray.opacity(0.3)], startPoint: .topLeading, endPoint: .bottomTrailing))
                         .overlay(RoundedRectangle(cornerRadius: 5).strokeBorder(.white.opacity(0.8), lineWidth: 0.8))
@@ -37,12 +40,12 @@ struct LeverView<Notch: View>: View {
                         })
                         .shadow(color: .black.opacity(0.20), radius: 3, y: 2)
                         .frame(width: min(cell - 3, 29), height: 25)
-                        .offset(x: cell * (CGFloat(selected.rawValue) + 0.5) - min(cell - 3, 29) / 2, y: 35)
+                        .offset(x: cell * (CGFloat(index) + 0.5) - min(cell - 3, 29) / 2, y: compact ? 23 : 35)
                         .accessibilityHidden(true).allowsHitTesting(false)
                 }
-                HStack(spacing: 0) { ForEach(FanSetting.allCases) { setting in notch(setting).frame(width: cell) } }
+                HStack(spacing: 0) { ForEach(settings) { setting in notch(setting).frame(width: cell) } }
             }
-        }.frame(height: 66)
+        }.frame(height: compact ? 49 : 66)
     }
 }
 

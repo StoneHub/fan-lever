@@ -25,6 +25,40 @@ final class FakeHardware: FanHardware {
 }
 
 final class FanControllerTests: XCTestCase {
+    func testBatteryDeadlineAndExpiry() {
+        let hw = FakeHardware(); let controller = FanController(hardware: hw, onBattery: { true })
+        let start = Date(timeIntervalSince1970: 100)
+        let result = controller.select(4, now: start)
+        XCTAssertTrue(result.onBattery)
+        XCTAssertEqual(result.expires, start.addingTimeInterval(300))
+        controller.tick(now: start.addingTimeInterval(299))
+        XCTAssertTrue(controller.ownsFans)
+        controller.tick(now: start.addingTimeInterval(300))
+        XCTAssertTrue(hw.fans.allSatisfy(\.isAutomatic))
+    }
+    func testUnplugShortensButNeverExtendsDeadline() {
+        var battery = false
+        let controller = FanController(hardware: FakeHardware(), onBattery: { battery })
+        let start = Date(timeIntervalSince1970: 100)
+        XCTAssertEqual(controller.select(4, now: start).expires, start.addingTimeInterval(1800))
+        battery = true
+        controller.tick(now: start.addingTimeInterval(100))
+        XCTAssertEqual(controller.expires, start.addingTimeInterval(400))
+        controller.tick(now: start.addingTimeInterval(200))
+        XCTAssertEqual(controller.expires, start.addingTimeInterval(400))
+        battery = false
+        controller.tick(now: start.addingTimeInterval(250))
+        XCTAssertEqual(controller.expires, start.addingTimeInterval(400))
+    }
+    func testUnplugKeepsEarlierDeadline() {
+        var battery = false
+        let controller = FanController(hardware: FakeHardware(), onBattery: { battery })
+        let start = Date(timeIntervalSince1970: 100)
+        _ = controller.select(4, now: start)
+        battery = true
+        controller.tick(now: start.addingTimeInterval(1700))
+        XCTAssertEqual(controller.expires, start.addingTimeInterval(1800))
+    }
     func testAutoRecoveryDoesNotDependOnRPMSensorReads() {
         let hw = FakeHardware(); let controller = FanController(hardware: hw)
         _ = controller.select(5)

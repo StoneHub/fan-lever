@@ -35,7 +35,7 @@ enum FanClient {
                 connection.invalidate()
                 continuation.resume(returning: snapshot)
             }
-            let failed = { gate.finish(FanSnapshot(message: "Open Fan Lever to enable or repair fan control.")) }
+            let failed = { gate.finish(FanSnapshot(message: "Click to enable or repair fan control.")) }
             connection.interruptionHandler = failed
             connection.invalidationHandler = failed
             connection.resume()
@@ -46,7 +46,7 @@ enum FanClient {
             }
             if let setting { proxy.select(setting.rawValue, reply: reply) } else { proxy.snapshot(reply: reply) }
             DispatchQueue.global().asyncAfter(deadline: .now() + 5) {
-                gate.finish(FanSnapshot(message: "Fan controller timed out. Open Fan Lever to check the actual state."))
+                gate.finish(FanSnapshot(message: "Fan controller timed out. Click to check setup."))
             }
         }
     }

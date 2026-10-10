@@ -1,9 +1,12 @@
 import SwiftUI
+#if DEBUG
 import ServiceManagement
 import WidgetKit
 #if DEBUG
 import DevFeedback
 #endif
+
+
 
 @MainActor final class FanModel: ObservableObject {
     @Published var snapshot = FanSnapshot.unavailable
@@ -152,3 +155,5 @@ extension View {
     func feedbackTarget(_ id: @autoclosure () -> String, label: @autoclosure () -> String) -> some View { self }
 }
 #endif
+
+#endif // Development-only companion preview.

@@ -35,7 +35,7 @@ final class Service: NSObject, FanServiceProtocol, NSXPCListenerDelegate {
 guard geteuid() == 0 else { fputs("Fan Lever helper must be launched by macOS.\n", stderr); exit(1) }
 do {
     let controller = FanController(hardware: try SMCDevice(), markOwnership: markOwnership,
-                                   clearOwnership: { unlink(markerPath) })
+                                   clearOwnership: { unlink(markerPath) }, onBattery: { fl_on_battery() != 0 })
     // A crash/relaunch returns our previous override to Auto, never a stranger's setting.
     if FileManager.default.fileExists(atPath: markerPath) {
         controller.ownsFans = true

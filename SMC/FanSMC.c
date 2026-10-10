@@ -1,6 +1,7 @@
 // AppleSMC userspace wire format; see docs/architecture.md for provenance.
 #include "FanSMC.h"
 #include <IOKit/IOKitLib.h>
+#include <IOKit/ps/IOPowerSources.h>
 #include <stddef.h>
 #include <string.h>
 #include <math.h>
@@ -38,6 +39,13 @@ int fl_open(uint32_t *connection) {
     IOObjectRelease(service); return error;
 }
 void fl_close(uint32_t connection) { if (connection) IOServiceClose(connection); }
+int fl_on_battery(void) {
+    CFTypeRef info = IOPSCopyPowerSourcesInfo();
+    if (!info) return 1; // Unknown power uses the shorter limit.
+    CFStringRef source = IOPSGetProvidingPowerSourceType(info);
+    int limited = !source || !CFEqual(source, CFSTR(kIOPMACPowerKey));
+    CFRelease(info); return limited;
+}
 int fl_read(uint32_t connection, const char *key, double *value) {
     Packet in = {0}, out = {0}; int error = info(connection, key, &in.info);
     if (error) return error;

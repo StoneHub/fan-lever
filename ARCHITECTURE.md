@@ -4,9 +4,9 @@ The WidgetKit extension renders the lever and exposes six App Intent buttons. Th
 
 The daemon uses Apple's SMAppService registration/approval flow. XPC validates the team and exact app/widget identifiers at the listener, and clients require the exact signed helper identifier. The widget has a scoped Mach service lookup exception. This is a locally distributed utility, not an App Store entitlement claim.
 
-The helper records override ownership in a root-owned, no-follow recovery marker before writes. It attempts to restore Auto on the 30-minute deadline, serious/critical thermal pressure, partial-write failure and termination. On crash relaunch, it restores Auto only if its marker exists. Repeated recovery failures remain visible and are retried. There is no promise of recovery while the system or hardware itself is unresponsive.
+The helper records override ownership in a root-owned, no-follow recovery marker before writes. It attempts to restore Auto on the five-minute battery / 30-minute AC deadline, serious/critical thermal pressure, partial-write failure and termination. On crash relaunch, it restores Auto only if its marker exists. Repeated recovery failures remain visible and are retried. There is no promise of recovery while the system or hardware itself is unresponsive.
 
-Snapshot JSON in the app group is presentation cache, never a command channel. The helper returns actual fan mode, actual RPM and target RPM. A cached selected notch is not authoritative for hardware control. Widget refreshes are scheduled every five minutes and after user actions, subject to macOS's reload budget; the app polls only while its window view is active.
+Snapshot JSON in the app group is presentation cache, never a command channel. The helper returns actual fan mode, actual RPM and target RPM. A cached selected notch is not authoritative for hardware control. Widget refreshes are scheduled every five minutes and after user actions, subject to macOS's reload budget; the windowless host listens for power-source changes and requests a refresh after the helper has adjusted its deadline. It does not poll. The helper independently checks power every two seconds, so timeout enforcement does not depend on widget refresh or the host remaining alive. No new login agent was added.
 
 ## Hardware scope and provenance
 
